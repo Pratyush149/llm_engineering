@@ -3,9 +3,10 @@ import math
 from pydantic import BaseModel, Field
 from litellm import completion
 from dotenv import load_dotenv
+import litellm
 
 from evaluation.test import TestQuestion, load_tests
-from implementation.answer import answer_question, fetch_context
+from pro_implementation.answer import answer_question, fetch_context
 
 
 load_dotenv(override=True)
@@ -230,6 +231,7 @@ def run_cli_evaluation(test_number: int):
 
 
 def main():
+    litellm._turn_on_debug()
     """CLI to evaluate a specific test by row number."""
     if len(sys.argv) != 2:
         print("Usage: uv run eval.py <test_row_number>")

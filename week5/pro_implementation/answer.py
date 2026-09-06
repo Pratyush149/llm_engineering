@@ -5,12 +5,14 @@ from litellm import completion
 from pydantic import BaseModel, Field
 from pathlib import Path
 from tenacity import retry, wait_exponential
-
+import litellm
+import traceback
+import logging
 
 load_dotenv(override=True)
 
-# MODEL = "openai/gpt-4.1-nano"
-MODEL = "groq/openai/gpt-oss-120b"
+MODEL = "openai/gpt-4.1-nano"
+# MODEL = "groq/openai/gpt-oss-120b"
 DB_NAME = str(Path(__file__).parent.parent / "preprocessed_db")
 KNOWLEDGE_BASE_PATH = Path(__file__).parent.parent / "knowledge-base"
 SUMMARIES_PATH = Path(__file__).parent.parent / "summaries"
@@ -145,12 +147,25 @@ def fetch_context(original_question, history=None):
     return reranked[:FINAL_K]
 
 
-@retry(wait=wait)
+# @retry(wait=wait)
 def answer_question(question: str, history: list[dict] = []) -> tuple[str, list]:
     """
     Answer a question using RAG and return the answer and the retrieved context
     """
+    print("STARTING SCRIPT...")
+    logging.basicConfig(level=logging.DEBUG)
+    litellm._turn_on_debug()
     chunks = fetch_context(question, history)
     messages = make_rag_messages(question, history, chunks)
-    response = completion(model=MODEL, messages=messages)
+    try:
+        response = litellm.completion(model=MODEL, messages=messages)
+
+    except Exception as e:
+        print("\n--- ERROR DETAILS ---")
+        print(f"Exception Type: {type(e).__name__}")
+        print(f"Status Code: {getattr(e, 'status_code', 'N/A')}")
+        print(f"Message: {e}")
+        print("\n--- FULL TRACEBACK ---")
+        traceback.print_exc()
     return response.choices[0].message.content, chunks
+
